@@ -2,17 +2,22 @@
 
 ## Stack
 
-- Bun
-- TypeScript
-- Hono + Hono JSX
-- Prisma + PostgreSQL
-- tRPC
-- Lucia Auth
-- TailwindCSS
+-   [x] Bun
+-   [x] TypeScript
+-   [x] Hono + Hono JSX
+-   [x] Prisma + PostgreSQL
+-   [x] Lucia Auth
+-   [x] TailwindCSS
+-   [x] tRPC
+-   [ ] Commit Lint
+-   [ ] Prettier
+-   [ ] Semantic Release
+-   [ ] OpenAPI Swagger
 
 ## Install
 
 To install dependencies:
+
 ```sh
 bun install
 ```
@@ -20,6 +25,7 @@ bun install
 ## Development
 
 To run:
+
 ```sh
 bun run dev
 ```

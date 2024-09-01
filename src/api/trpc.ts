@@ -6,14 +6,16 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC, TRPCError } from "@trpc/server";
-import superjson from "superjson";
-import { ZodError } from "zod";
+import { initTRPC, TRPCError } from '@trpc/server';
+import superjson from 'superjson';
+import { ZodError } from 'zod';
 
-import { AppRoleDefault } from "@/config/constants";
-import { verifyRequest } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import type { Context } from "hono";
+import { AppRoleDefault } from '@/config/constants';
+import { verifyRequest } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import type { Context } from 'hono';
+
+import { OpenApiMeta } from 'trpc-openapi';
 
 /**
  * 1. CONTEXT
@@ -27,24 +29,21 @@ import type { Context } from "hono";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: {
-  headers: Headers;
-  c: Context;
-}) => {
-  await verifyRequest(opts.c, async () => {});
-  const user = opts.c.get("user");
-  const isAdmin = user?.roles?.includes(AppRoleDefault.ADMIN) ?? false;
+export const createTRPCContext = async (opts: { headers: Headers; c: Context }) => {
+	await verifyRequest(opts.c, async () => {});
+	const user = opts.c.get('user');
+	const isAdmin = user?.roles?.includes(AppRoleDefault.ADMIN) ?? false;
 
-  return {
-    user: user
-      ? {
-          id: user.id,
-          isAdmin,
-        }
-      : null,
-    prisma,
-    ...opts,
-  };
+	return {
+		user: user
+			? {
+					id: user.id,
+					isAdmin,
+				}
+			: null,
+		prisma,
+		...opts,
+	};
 };
 
 /**
@@ -54,19 +53,21 @@ export const createTRPCContext = async (opts: {
  * ZodErrors so that you get typesafety on the frontend if your procedure fails due to validation
  * errors on the backend.
  */
-const t = initTRPC.context<typeof createTRPCContext>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
-      },
-    };
-  },
-});
+const t = initTRPC
+	.context<typeof createTRPCContext>()
+	.meta<OpenApiMeta>()
+	.create({
+		transformer: superjson,
+		errorFormatter({ shape, error }) {
+			return {
+				...shape,
+				data: {
+					...shape.data,
+					zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+				},
+			};
+		},
+	});
 
 /**
  * 3. ROUTER & PROCEDURE (THE IMPORTANT BIT)
@@ -99,17 +100,17 @@ export const publicProcedure = t.procedure;
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.user?.id) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  }
+	if (!ctx.user?.id) {
+		throw new TRPCError({ code: 'UNAUTHORIZED' });
+	}
 
-  return next();
+	return next();
 });
 
 export const adminProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.user?.id || !ctx.user?.isAdmin) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  }
+	if (!ctx.user?.id || !ctx.user?.isAdmin) {
+		throw new TRPCError({ code: 'UNAUTHORIZED' });
+	}
 
-  return next();
+	return next();
 });
