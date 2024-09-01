@@ -1,0 +1,465 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
+  // Further reading:
+  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
+  url      = env("DATABASE_URL")
+}
+
+model Key {
+  id             String  @id @unique
+  hashedPassword String?
+  userId         String
+  activeExpires  BigInt
+  idleExpires    BigInt
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Defines a session for user authentication, related to a specific user
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+// Represents an account linked to a user, unique per provider-account ID combination
+model Account {
+  id                String @id
+  providerAccountId String @unique
+  provider          String
+  userId            String
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@index([userId])
+}
+
+// User model capturing basic user information and relationships with other entities
+model User {
+  id         String  @id
+  name       String
+  password   String?
+  email      String? @unique
+  image      String?
+  validEmail Boolean @default(false)
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  Keys                  Key[]
+  Sessions              Session[]
+  Accounts              Account[]
+  UserRoles             UserRole[]
+  MetaFile              MetaFile[]
+  EmailVerificationCode EmailVerificationCode[]
+  Workspace             Workspace[]
+  WorkspaceUserRole     WorkspaceUserRole[]
+  PasswordResetToken    PasswordResetToken[]
+  CartItems             CartItem[]
+  PaidProducts          PaidProduct[]
+  Bills                 Bill[]
+  Payments              Payment[]
+  ProductReviews        ProductReview[]
+  CashTransactions      CashTransaction[]
+  UserBalances          UserBalance[]
+}
+
+model PasswordResetToken {
+  id        String   @id @unique
+  userId    String
+  tokenHash String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// Manages email verification codes for users
+model EmailVerificationCode {
+  id        String   @id
+  userId    String
+  code      String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// Manages email verification tokens for users
+model EmailVerificationToken {
+  id        String   @id
+  tokenHash String
+  email     String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+// Defines roles within the system
+model Role {
+  id              String           @id
+  name            String           @unique
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+// Intermediary table for many-to-many relationship between users and roles
+model UserRole {
+  id     String @id
+  name   String
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  startDate DateTime? // When the user assumes the role
+  endDate   DateTime? // Optional, when the role expires
+
+  @@unique([userId, roleId])
+}
+
+// Defines permissions within the system
+model Permission {
+  id              String           @id
+  name            String           @unique
+  rolePermissions RolePermission[]
+}
+
+// Intermediary table for many-to-many relationship between roles and permissions
+model RolePermission {
+  id           String     @id
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+// Manages files or media associated with a user, including metadata
+model MetaFile {
+  id             String    @id
+  mimetype       String?
+  url            String?
+  blurBase64     String?
+  width          Int?
+  height         Int?
+  approved       Boolean   @default(true)
+  createdAt      DateTime? @default(now())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  Product        Product?  @relation("ProductImages", fields: [productId], references: [id])
+  productId      String?
+  productImageId String?
+}
+
+// Represents a workspace or project area within the system
+model Workspace {
+  id          String  @id
+  name        String
+  slug        String  @unique
+  description String?
+  isPublic    Boolean @default(false)
+  creatorId   String
+  creator     User    @relation(fields: [creatorId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  workspaceRoles     WorkspaceRole[]
+  workspaceUserRoles WorkspaceUserRole[]
+  cartItems          CartItem[]
+  paidProducts       PaidProduct[]
+
+  @@unique([id, slug])
+  @@index([creatorId])
+}
+
+// Defines roles specific to a workspace
+model WorkspaceRole {
+  id          String    @id
+  name        String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  WorkspaceUserRoles      WorkspaceUserRole[]
+  WorkspaceRolePermission WorkspaceRolePermission[]
+}
+
+// Intermediary table for many-to-many relationship between workspace users and roles
+model WorkspaceUserRole {
+  id              String        @id
+  workspaceId     String
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  workspaceRoleId String
+  workspaceRole   WorkspaceRole @relation(fields: [workspaceRoleId], references: [id])
+}
+
+// Defines permissions within a workspace context
+model WorkspacePermission {
+  id   String @id
+  name String @unique
+
+  WorkspaceRolePermission WorkspaceRolePermission[]
+}
+
+// Intermediary table for many-to-many relationship between workspace roles and permissions
+model WorkspaceRolePermission {
+  id String @id
+
+  workspaceRole         WorkspaceRole       @relation(fields: [workspaceRoleId], references: [id])
+  workspaceRoleId       String
+  workspacePermission   WorkspacePermission @relation(fields: [workspacePermissionId], references: [id])
+  workspacePermissionId String
+}
+
+enum Currency {
+  USD
+  VND
+  // ...
+}
+
+enum TrackingCodeType {
+  GA
+  GTM
+  FACEBOOK_PIXEL
+}
+
+model TrackingCode {
+  id String @id @default(uuid())
+
+  code String           @unique
+  type TrackingCodeType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  images      MetaFile[] @relation("ProductImages")
+  price       Float?
+  currency    Currency   @default(VND)
+  isActive    Boolean    @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  expiresAt DateTime?
+
+  productReviews       ProductReview[]
+  productTags          ProductTag[]
+  cartItems            CartItem[]
+  paidProducts         PaidProduct[]
+  lemonsqueezyVariants LemonsqueezyVariant[]
+}
+
+model CartItem {
+  id          String     @id @default(uuid())
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id])
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  workspaceId String?
+  bill        Bill?      @relation(fields: [billId], references: [id])
+  billId      String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime?  @updatedAt
+}
+
+model ProductSubscription {
+  id            String                    @id @default(uuid())
+  startDate     DateTime
+  endDate       DateTime?
+  status        ProductSubscriptionStatus
+  paidProduct   PaidProduct               @relation(fields: [paidProductId], references: [id])
+  paidProductId String
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime?                 @updatedAt
+}
+
+enum ProductSubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+model PaidProduct {
+  id                   String                @id @default(uuid())
+  ownerId              String
+  owner                User                  @relation(fields: [ownerId], references: [id])
+  workspace            Workspace?            @relation(fields: [workspaceId], references: [id])
+  workspaceId          String?
+  product              Product               @relation(fields: [productId], references: [id])
+  productId            String
+  bill                 Bill?                 @relation(fields: [billId], references: [id])
+  billId               String?
+  productSubscriptions ProductSubscription[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime?             @updatedAt
+}
+
+enum BillStatus {
+  UNPAID
+  PAID
+  CANCELLED
+}
+
+model Bill {
+  id           String        @id @default(uuid())
+  total        Float
+  currency     Currency      @default(VND)
+  status       BillStatus    @default(UNPAID)
+  user         User          @relation(fields: [userId], references: [id])
+  userId       String
+  paidProducts PaidProduct[]
+  payments     Payment[]
+  cartItems    CartItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime?     @updatedAt
+  expiresAt    DateTime?
+}
+
+enum PaymentStatus {
+  PAID
+  CANCELLED
+  FREE
+  PENDING_VERIFICATION
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  MOMO
+  BANK_TRANSFER
+  LEMON_SQUEEZY
+}
+
+model Payment {
+  id                 String              @id @default(uuid())
+  user               User                @relation(fields: [userId], references: [id])
+  userId             String
+  amount             Float
+  currency           Currency            @default(VND)
+  status             PaymentStatus       @default(PENDING_VERIFICATION)
+  method             PaymentMethod
+  transactionId      String?
+  transactionDetails Json?
+  bill               Bill                @relation(fields: [billId], references: [id])
+  billId             String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime?           @updatedAt
+  expiresAt          DateTime?
+  paymentResetTokens PaymentResetToken[]
+}
+
+model PaymentResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  payment   Payment  @relation(fields: [paymentId], references: [id])
+  paymentId String
+}
+
+model Tag {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  productTags ProductTag[]
+}
+
+model ProductTag {
+  id        String  @id @default(uuid())
+  tag       Tag     @relation(fields: [tagsId], references: [id])
+  tagsId    String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+}
+
+model ProductReview {
+  id        String    @id @default(uuid())
+  content   String
+  rating    Int       @default(0)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  product   Product?  @relation(fields: [productId], references: [id])
+  productId String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+enum TransactionType {
+  DEPOSIT
+  REFUND
+}
+
+model CashTransaction {
+  id              String          @id @default(uuid())
+  userId          String
+  cashType        CashType        @default(CREDITS)
+  amount          Float
+  transactionType TransactionType
+  description     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  user            User            @relation(fields: [userId], references: [id])
+}
+
+model UserBalance {
+  id       String   @id @default(uuid())
+  cashType CashType @default(CREDITS)
+  balance  Float    @default(0)
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+
+  @@unique([userId, cashType])
+}
+
+enum CashType {
+  CREDITS
+}
+
+model LemonsqueezyProduct {
+  id                   String                @id @default(uuid())
+  product_id           Int                   @unique
+  type                 String
+  slug                 String
+  attributes           Json
+  lemonsqueezyVariants LemonsqueezyVariant[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime?             @updatedAt
+}
+
+model LemonsqueezyVariant {
+  id                    String               @id @default(uuid())
+  variant_id            Int                  @unique
+  slug                  String
+  type                  String
+  attributes            Json
+  lemonsqueezyProduct   LemonsqueezyProduct? @relation(fields: [lemonsqueezyProductId], references: [id])
+  lemonsqueezyProductId String?
+  product               Product?             @relation(fields: [productId], references: [id])
+  productId             String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime?            @updatedAt
+}

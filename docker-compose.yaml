@@ -1,0 +1,11 @@
+version: "3"
+services:
+  bun-express-starter:
+    container_name: bun-express-starter
+    restart: always
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
