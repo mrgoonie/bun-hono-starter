@@ -1,170 +1,166 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import { getPagination } from "@/api/helper";
-import { createTRPCRouter, protectedProcedure } from "@/api/trpc";
+import { getPagination } from '@/api/helper';
+import { createTRPCRouter, protectedProcedure } from '@/api/trpc';
 
 // Assuming Product and relevant models are defined similar to your Workspace model
 
 export const payment = createTRPCRouter({
-  // List Products
-  list: protectedProcedure
-    .input(
-      z.object({
-        // productId: z.string(),
-        page: z.number().optional(),
-        pageSize: z.number().optional(),
-      }),
-    )
-    .query(async ({ input, ctx }) => {
-      const { page = 1, pageSize = 10 } = input;
-      const skip = (page - 1) * pageSize;
+	// List Products
+	list: protectedProcedure
+		.input(
+			z.object({
+				// productId: z.string(),
+				page: z.number().optional(),
+				pageSize: z.number().optional(),
+			})
+		)
+		.query(async ({ input, ctx }) => {
+			const { page = 1, pageSize = 10 } = input;
+			const skip = (page - 1) * pageSize;
 
-      const where = {
-        // productId,
-        userId: ctx.user?.id!,
-      };
-      try {
-        const [products, totalCount] = await Promise.all([
-          ctx.prisma.payment.findMany({
-            where,
-            skip,
-            take: pageSize,
-            orderBy: { createdAt: "desc" },
-            include: {
-              bill: true,
-            },
-          }),
-          ctx.prisma.payment.count({ where }),
-        ]);
+			const where = {
+				// productId,
+				userId: ctx.user?.id!,
+			};
+			try {
+				const [products, totalCount] = await Promise.all([
+					ctx.prisma.payment.findMany({
+						where,
+						skip,
+						take: pageSize,
+						orderBy: { createdAt: 'desc' },
+						include: {
+							bill: true,
+						},
+					}),
+					ctx.prisma.payment.count({ where }),
+				]);
 
-        return {
-          list: products,
-          pagination: getPagination(page, totalCount, pageSize),
-        };
-      } catch (error) {
-        throw new Error(
-          `Failed to list workspace products: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
-      }
-    }),
+				return {
+					list: products,
+					pagination: getPagination(page, totalCount, pageSize),
+				};
+			} catch (error) {
+				throw new Error(`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			}
+		}),
 
-  getDetail: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      try {
-        const { id } = input;
-        if (!id) throw new Error("Need Id");
+	getDetail: protectedProcedure
+		.input(
+			z.object({
+				id: z.string(),
+			})
+		)
+		.query(async ({ ctx, input }) => {
+			try {
+				const { id } = input;
+				if (!id) throw new Error('Need Id');
 
-        const item = await ctx.prisma.payment.findUniqueOrThrow({
-          where: {
-            id,
-            userId: ctx.user?.id!,
-          },
-          include: {
-            bill: {
-              include: {
-                paidProducts: {
-                  include: {
-                    product: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-        return item;
-      } catch (error) {
-        throw new Error(
-          `Failed to Add To Cart: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
-      }
-    }),
+				const item = await ctx.prisma.payment.findUniqueOrThrow({
+					where: {
+						id,
+						userId: ctx.user?.id!,
+					},
+					include: {
+						bill: {
+							include: {
+								paidProducts: {
+									include: {
+										product: true,
+									},
+								},
+							},
+						},
+					},
+				});
+				return item;
+			} catch (error) {
+				throw new Error(`Failed to Add To Cart: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			}
+		}),
 
-  // create: protectedProcedure
-  // 	.input(
-  // 		z.object({
-  // 			productId: z.string(),
-  // 		})
-  // 	)
-  // 	.mutation(async ({ ctx, input }) => {
-  // 		try {
-  // 			const { productId } = input;
-  // 			if (!productId) throw new Error("Need Product");
+	// create: protectedProcedure
+	// 	.input(
+	// 		z.object({
+	// 			productId: z.string(),
+	// 		})
+	// 	)
+	// 	.mutation(async ({ ctx, input }) => {
+	// 		try {
+	// 			const { productId } = input;
+	// 			if (!productId) throw new Error("Need Product");
 
-  // 			const item = await ctx.prisma.cartItem.create({
-  // 				data: {
-  // 					productId,
-  // 					userId: ctx.user?.id!,
-  // 				},
-  // 			});
-  // 			return item;
-  // 		} catch (error) {
-  // 			throw new Error(`Failed to Add To Cart: ${error instanceof Error ? error.message : "Unknown error"}`);
-  // 		}
-  // 	}),
+	// 			const item = await ctx.prisma.cartItem.create({
+	// 				data: {
+	// 					productId,
+	// 					userId: ctx.user?.id!,
+	// 				},
+	// 			});
+	// 			return item;
+	// 		} catch (error) {
+	// 			throw new Error(`Failed to Add To Cart: ${error instanceof Error ? error.message : "Unknown error"}`);
+	// 		}
+	// 	}),
 
-  // // Update a Product
-  // update: protectedProcedure
-  // 	.input(
-  // 		z.object({
-  // 			id: z.string(),
-  // 			images: z.array(z.any()).optional().default([]),
-  // 		})
-  // 	)
-  // 	.mutation(async ({ ctx, input }) => {
-  // 		const { id, images, ...data } = input;
+	// // Update a Product
+	// update: protectedProcedure
+	// 	.input(
+	// 		z.object({
+	// 			id: z.string(),
+	// 			images: z.array(z.any()).optional().default([]),
+	// 		})
+	// 	)
+	// 	.mutation(async ({ ctx, input }) => {
+	// 		const { id, images, ...data } = input;
 
-  // 		try {
-  // 			const res = await Promise.all(
-  // 				images?.map(async (x) => {
-  // 					return ctx.prisma.metaFile.create({
-  // 						data: {
-  // 							...x,
-  // 							userId: ctx.user?.id!, // Assuming the existence of ctx.user
-  // 							productImageId: id,
-  // 						},
-  // 					});
-  // 				})
-  // 			);
+	// 		try {
+	// 			const res = await Promise.all(
+	// 				images?.map(async (x) => {
+	// 					return ctx.prisma.metaFile.create({
+	// 						data: {
+	// 							...x,
+	// 							userId: ctx.user?.id!, // Assuming the existence of ctx.user
+	// 							productImageId: id,
+	// 						},
+	// 					});
+	// 				})
+	// 			);
 
-  // 			const updatedProduct = await ctx.prisma.product.update({
-  // 				where: { id },
-  // 				data: {
-  // 					...data,
-  // 					// images: { connect: { id: imageId } },
-  // 				},
-  // 			});
+	// 			const updatedProduct = await ctx.prisma.product.update({
+	// 				where: { id },
+	// 				data: {
+	// 					...data,
+	// 					// images: { connect: { id: imageId } },
+	// 				},
+	// 			});
 
-  // 			return updatedProduct;
-  // 		} catch (error) {
-  // 			throw new Error(
-  // 				`Failed to update workspace product: ${error instanceof Error ? error.message : "Unknown error"}`
-  // 			);
-  // 		}
-  // 	}),
+	// 			return updatedProduct;
+	// 		} catch (error) {
+	// 			throw new Error(
+	// 				`Failed to update workspace product: ${error instanceof Error ? error.message : "Unknown error"}`
+	// 			);
+	// 		}
+	// 	}),
 
-  // // Delete a Product
-  // remove: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
-  // 	try {
-  // 		await ctx.prisma.product.delete({
-  // 			where: { id: input.id },
-  // 		});
+	// // Delete a Product
+	// remove: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+	// 	try {
+	// 		await ctx.prisma.product.delete({
+	// 			where: { id: input.id },
+	// 		});
 
-  // 		await ctx.prisma.metaFile.deleteMany({
-  // 			where: {
-  // 				productImageId: input.id,
-  // 			},
-  // 		});
+	// 		await ctx.prisma.metaFile.deleteMany({
+	// 			where: {
+	// 				productImageId: input.id,
+	// 			},
+	// 		});
 
-  // 		return { success: true, message: "Workspace product deleted successfully" };
-  // 	} catch (error) {
-  // 		throw new Error(
-  // 			`Failed to delete workspace product: ${error instanceof Error ? error.message : "Unknown error"}`
-  // 		);
-  // 	}
-  // }),
+	// 		return { success: true, message: "Workspace product deleted successfully" };
+	// 	} catch (error) {
+	// 		throw new Error(
+	// 			`Failed to delete workspace product: ${error instanceof Error ? error.message : "Unknown error"}`
+	// 		);
+	// 	}
+	// }),
 });

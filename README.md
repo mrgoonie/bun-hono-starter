@@ -2,17 +2,17 @@
 
 ## Stack
 
--   [x] Bun
--   [x] TypeScript
--   [x] Hono + Hono JSX
--   [x] Prisma + PostgreSQL
--   [x] Lucia Auth
--   [x] TailwindCSS
--   [x] tRPC
--   [ ] Commit Lint
--   [ ] Prettier
--   [ ] Semantic Release
--   [ ] OpenAPI Swagger
+- [x] Bun
+- [x] TypeScript
+- [x] Hono + Hono JSX
+- [x] Prisma + PostgreSQL
+- [x] Lucia Auth
+- [x] TailwindCSS
+- [x] tRPC
+- [x] Commit Lint
+- [x] Prettier
+- [x] Semantic Release
+- [ ] OpenAPI Swagger
 
 ## Install
 

@@ -1,7 +1,7 @@
-import type { FC, PropsWithChildren } from "hono/jsx";
-import { Head } from "./common/head";
-import { Header } from "./common/header";
-import { Footer } from "./common/footer";
+import type { FC, PropsWithChildren } from 'hono/jsx';
+import { Head } from './common/head';
+import { Header } from './common/header';
+import { Footer } from './common/footer';
 
 const darkModeInitScript = `
   function initDarkMode() {
@@ -20,24 +20,24 @@ const darkModeInitScript = `
 `;
 
 const Master: FC = (props: PropsWithChildren) => {
-  return (
-    <html lang="en" className="dark:bg-gray-900 h-full">
-      <head>
-        <Head />
-        <script dangerouslySetInnerHTML={{ __html: darkModeInitScript }} />
-      </head>
+	return (
+		<html lang="en" className="dark:bg-gray-900 h-full">
+			<head>
+				<Head />
+				<script dangerouslySetInnerHTML={{ __html: darkModeInitScript }} />
+			</head>
 
-      <body className="dark:text-white h-full">
-        <div className="flex flex-col min-h-screen">
-          <Header />
+			<body className="dark:text-white h-full">
+				<div className="flex flex-col min-h-screen">
+					<Header />
 
-          {props.children}
+					{props.children}
 
-          <Footer />
-        </div>
-      </body>
-    </html>
-  );
+					<Footer />
+				</div>
+			</body>
+		</html>
+	);
 };
 
 export default Master;

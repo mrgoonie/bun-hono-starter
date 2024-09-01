@@ -1,262 +1,246 @@
-"use server";
+'use server';
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- checked in configureLemonSqueezy() */
-import console from "node:console";
-import crypto from "node:crypto";
+import console from 'node:console';
+import crypto from 'node:crypto';
 
 import {
-  cancelSubscription,
-  createCheckout,
-  createWebhook,
-  getPrice,
-  getProduct,
-  getSubscription,
-  listPrices,
-  listProducts,
-  listWebhooks,
-  updateSubscription,
-  type Variant,
-} from "@lemonsqueezy/lemonsqueezy.js";
-import { toInt } from "diginext-utils/dist/object";
-import { makeSlug } from "diginext-utils/dist/Slug";
+	cancelSubscription,
+	createCheckout,
+	createWebhook,
+	getPrice,
+	getProduct,
+	getSubscription,
+	listPrices,
+	listProducts,
+	listWebhooks,
+	updateSubscription,
+	type Variant,
+} from '@lemonsqueezy/lemonsqueezy.js';
+import { toInt } from 'diginext-utils/dist/object';
+import { makeSlug } from 'diginext-utils/dist/Slug';
 
-import { configureLemonSqueezy } from "@/lib/payment/lemonsqueezy";
-import { verifyRequest } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { env } from "@/env";
-import type { Context } from "hono";
+import { configureLemonSqueezy } from '@/lib/payment/lemonsqueezy';
+import { verifyRequest } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { env } from '@/env';
+import type { Context } from 'hono';
 
 /**
  * This action will log out the current user.
  */
 export async function logout() {
-  // await signOut();
+	// await signOut();
 }
 
 export async function fetchProductAndVariant(...params): Promise<any> {
-  //
+	//
 
-  try {
-    console.log("fetchProductAndVariant");
+	try {
+		console.log('fetchProductAndVariant');
 
-    let page = 1;
+		let page = 1;
 
-    configureLemonSqueezy();
-    console.log("configureLemonSqueezy");
+		configureLemonSqueezy();
+		console.log('configureLemonSqueezy');
 
-    const fetchProductFromLemonsqueezy = async () => {
-      //
-      // Fetch products from the Lemon Squeezy store.
-      const products = await listProducts({
-        filter: { storeId: env.LEMONSQUEEZY_STORE_ID },
-        include: ["variants"],
-        page: {
-          number: page,
-        },
-      });
+		const fetchProductFromLemonsqueezy = async () => {
+			//
+			// Fetch products from the Lemon Squeezy store.
+			const products = await listProducts({
+				filter: { storeId: env.LEMONSQUEEZY_STORE_ID },
+				include: ['variants'],
+				page: {
+					number: page,
+				},
+			});
 
-      if (!products.data) throw new Error("Can't fetch");
+			if (!products.data) throw new Error("Can't fetch");
 
-      const { meta, data, included } = products.data as any;
-      //
+			const { meta, data, included } = products.data as any;
+			//
 
-      const productsDb = [] as any;
+			const productsDb = [] as any;
 
-      for (const item of data) {
-        const { id, type, attributes, ...rest } = item;
+			for (const item of data) {
+				const { id, type, attributes, ...rest } = item;
 
-        const _exited = await prisma.lemonsqueezyProduct.upsert({
-          where: {
-            product_id: toInt(id),
-          },
-          update: {
-            type,
-            slug: attributes.slug,
-            attributes,
-          },
-          create: {
-            product_id: toInt(id),
-            type,
-            slug: attributes.slug,
-            attributes,
-          },
-        });
+				const _exited = await prisma.lemonsqueezyProduct.upsert({
+					where: {
+						product_id: toInt(id),
+					},
+					update: {
+						type,
+						slug: attributes.slug,
+						attributes,
+					},
+					create: {
+						product_id: toInt(id),
+						type,
+						slug: attributes.slug,
+						attributes,
+					},
+				});
 
-        productsDb.push(_exited);
-      }
+				productsDb.push(_exited);
+			}
 
-      for (const item of included) {
-        const { id, type, attributes, ...rest } = item;
+			for (const item of included) {
+				const { id, type, attributes, ...rest } = item;
 
-        const product = productsDb.find(
-          (x) => x.product_id == attributes.product_id,
-        );
-        if (!product) throw Error("Product Not Found");
+				const product = productsDb.find((x) => x.product_id == attributes.product_id);
+				if (!product) throw Error('Product Not Found');
 
-        const slug = makeSlug(`${product.slug} ${attributes.name}`);
+				const slug = makeSlug(`${product.slug} ${attributes.name}`);
 
-        const exited = await prisma.lemonsqueezyVariant.upsert({
-          where: {
-            variant_id: toInt(id),
-          },
-          update: {
-            type,
-            slug,
-            attributes,
-            lemonsqueezyProduct: {
-              connect: {
-                product_id: toInt(attributes.product_id),
-              },
-            },
-          },
-          create: {
-            variant_id: toInt(id),
-            slug,
-            type,
-            attributes,
-            lemonsqueezyProduct: {
-              connect: {
-                product_id: toInt(attributes.product_id),
-              },
-            },
-          },
-        });
-      }
+				const exited = await prisma.lemonsqueezyVariant.upsert({
+					where: {
+						variant_id: toInt(id),
+					},
+					update: {
+						type,
+						slug,
+						attributes,
+						lemonsqueezyProduct: {
+							connect: {
+								product_id: toInt(attributes.product_id),
+							},
+						},
+					},
+					create: {
+						variant_id: toInt(id),
+						slug,
+						type,
+						attributes,
+						lemonsqueezyProduct: {
+							connect: {
+								product_id: toInt(attributes.product_id),
+							},
+						},
+					},
+				});
+			}
 
-      //
+			//
 
-      const { currentPage, from, lastPage, perPage, to, total } = meta.page;
+			const { currentPage, from, lastPage, perPage, to, total } = meta.page;
 
-      if (page < lastPage) {
-        page++;
-        await fetchProductFromLemonsqueezy();
-      }
-    };
+			if (page < lastPage) {
+				page++;
+				await fetchProductFromLemonsqueezy();
+			}
+		};
 
-    await fetchProductFromLemonsqueezy();
-  } catch (error) {
-    throw new Error(
-      `fetchProductAndVariant failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+		await fetchProductFromLemonsqueezy();
+	} catch (error) {
+		throw new Error(`fetchProductAndVariant failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
 }
 
 interface IgetCheckoutURL {
-  variantId: number;
-  redirectUrl: string;
-  expiresAt?: string;
-  embed?: boolean;
-  customData?: any;
-  c: Context;
+	variantId: number;
+	redirectUrl: string;
+	expiresAt?: string;
+	embed?: boolean;
+	customData?: any;
+	c: Context;
 }
 
 /**
  * This action will create a checkout on Lemon Squeezy.
  */
-export async function getCheckoutURL({
-  variantId,
-  redirectUrl,
-  embed = false,
-  customData = {},
-  c,
-  ...options
-}: IgetCheckoutURL) {
-  configureLemonSqueezy();
+export async function getCheckoutURL({ variantId, redirectUrl, embed = false, customData = {}, c, ...options }: IgetCheckoutURL) {
+	configureLemonSqueezy();
 
-  await verifyRequest(c, async () => {});
-  const user = c.get("user");
-  // const { user } = await validateRequest();
-  if (!user) {
-    throw new Error("User is not authenticated.");
-  }
-  customData = {
-    ...customData,
-    user_id: user.id,
-  };
+	await verifyRequest(c, async () => {});
+	const user = c.get('user');
+	// const { user } = await validateRequest();
+	if (!user) {
+		throw new Error('User is not authenticated.');
+	}
+	customData = {
+		...customData,
+		user_id: user.id,
+	};
 
-  const checkout = await createCheckout(env.LEMONSQUEEZY_STORE_ID!, variantId, {
-    checkoutOptions: {
-      embed,
-      media: false,
-      logo: !embed,
-    },
-    ...(options?.expiresAt ? { expiresAt: options?.expiresAt } : {}),
-    checkoutData: {
-      email: user.email ?? undefined,
-      custom: customData,
-    },
-    // src/app/api/payment/callback/[id]/route.ts
-    productOptions: {
-      enabledVariants: [variantId],
-      redirectUrl,
-      receiptButtonText: "Go to Dashboard",
-      receiptThankYouNote: "Thank you for signing up to Lemon Stand!",
-    },
-  });
+	const checkout = await createCheckout(env.LEMONSQUEEZY_STORE_ID!, variantId, {
+		checkoutOptions: {
+			embed,
+			media: false,
+			logo: !embed,
+		},
+		...(options?.expiresAt ? { expiresAt: options?.expiresAt } : {}),
+		checkoutData: {
+			email: user.email ?? undefined,
+			custom: customData,
+		},
+		// src/app/api/payment/callback/[id]/route.ts
+		productOptions: {
+			enabledVariants: [variantId],
+			redirectUrl,
+			receiptButtonText: 'Go to Dashboard',
+			receiptThankYouNote: 'Thank you for signing up to Lemon Stand!',
+		},
+	});
 
-  if (!checkout.data?.data?.attributes?.url)
-    throw new Error("Create Checkout Failed");
+	if (!checkout.data?.data?.attributes?.url) throw new Error('Create Checkout Failed');
 
-  return checkout.data?.data?.attributes?.url;
+	return checkout.data?.data?.attributes?.url;
 }
 
 export async function getListProducts() {
-  //
-  console.log("getListProducts");
-  try {
-    console.log("action");
+	//
+	console.log('getListProducts');
+	try {
+		console.log('action');
 
-    // Fetch products from the Lemon Squeezy store.
-    const products = await listProducts({
-      filter: { storeId: env.LEMONSQUEEZY_STORE_ID },
-      include: ["variants"],
-    });
+		// Fetch products from the Lemon Squeezy store.
+		const products = await listProducts({
+			filter: { storeId: env.LEMONSQUEEZY_STORE_ID },
+			include: ['variants'],
+		});
 
-    return products.data;
+		return products.data;
 
-    // Loop through all the variants.
-    const allVariants = products.data?.included as
-      | Variant["data"][]
-      | undefined;
+		// Loop through all the variants.
+		const allVariants = products.data?.included as Variant['data'][] | undefined;
 
-    return allVariants;
+		return allVariants;
 
-    // const list = [] as any;
-    // // for...of supports asynchronous operations, unlike forEach.
-    // if (allVariants) {
-    // 	for (const v of allVariants) {
-    // 		const variant = v.attributes;
+		// const list = [] as any;
+		// // for...of supports asynchronous operations, unlike forEach.
+		// if (allVariants) {
+		// 	for (const v of allVariants) {
+		// 		const variant = v.attributes;
 
-    // 		// Skip draft variants or if there's more than one variant, skip the default
-    // 		// variant. See https://docs.lemonsqueezy.com/api/variants
-    // 		if (variant.status === "draft" || (allVariants.length !== 1 && variant.status === "pending")) {
-    // 			// `return` exits the function entirely, not just the current iteration.
-    // 			continue;
-    // 		}
+		// 		// Skip draft variants or if there's more than one variant, skip the default
+		// 		// variant. See https://docs.lemonsqueezy.com/api/variants
+		// 		if (variant.status === "draft" || (allVariants.length !== 1 && variant.status === "pending")) {
+		// 			// `return` exits the function entirely, not just the current iteration.
+		// 			continue;
+		// 		}
 
-    // 		// Fetch the Product name.
-    // 		const productName = (await getProduct(variant.product_id)).data?.data.attributes.name ?? "";
-    // 		return productName;
+		// 		// Fetch the Product name.
+		// 		const productName = (await getProduct(variant.product_id)).data?.data.attributes.name ?? "";
+		// 		return productName;
 
-    // 		// Fetch the Price object.
-    // 		const variantPriceObject = await listPrices({
-    // 			filter: {
-    // 				variantId: v.id,
-    // 			},
-    // 		});
+		// 		// Fetch the Price object.
+		// 		const variantPriceObject = await listPrices({
+		// 			filter: {
+		// 				variantId: v.id,
+		// 			},
+		// 		});
 
-    // 		list.push(variantPriceObject);
-    // 	}
-    // }
+		// 		list.push(variantPriceObject);
+		// 	}
+		// }
 
-    // return list;
-  } catch (error) {
-    throw new Error(
-      `action failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+		// return list;
+	} catch (error) {
+		throw new Error(`action failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
 
-  return [];
+	return [];
 }
 
 /**
@@ -264,33 +248,28 @@ export async function getListProducts() {
  * the webhook if it exists, otherwise it will return undefined.
  */
 export async function hasWebhook() {
-  configureLemonSqueezy();
+	configureLemonSqueezy();
 
-  if (!env.LEMONSQUEEZY_WEBHOOK_URL) {
-    throw new Error(
-      "Missing required LEMONSQUEEZY_WEBHOOK_URL env variable. Please, set it in your .env file.",
-    );
-  }
+	if (!env.LEMONSQUEEZY_WEBHOOK_URL) {
+		throw new Error('Missing required LEMONSQUEEZY_WEBHOOK_URL env variable. Please, set it in your .env file.');
+	}
 
-  if (env.LEMONSQUEEZY_WEBHOOK_URL.indexOf("localhost") >= 0)
-    throw new Error("Lemonsqueezy Webhook Url Ignoring localhost ");
+	if (env.LEMONSQUEEZY_WEBHOOK_URL.indexOf('localhost') >= 0) throw new Error('Lemonsqueezy Webhook Url Ignoring localhost ');
 
-  // Check if a webhook exists on Lemon Squeezy.
-  const allWebhooks = await listWebhooks({
-    filter: { storeId: env.LEMONSQUEEZY_STORE_ID },
-  });
+	// Check if a webhook exists on Lemon Squeezy.
+	const allWebhooks = await listWebhooks({
+		filter: { storeId: env.LEMONSQUEEZY_STORE_ID },
+	});
 
-  // Check if LEMONSQUEEZY_WEBHOOK_URL ends with a slash. If not, add it.
-  let webhookUrl = env.LEMONSQUEEZY_WEBHOOK_URL;
-  if (!webhookUrl.endsWith("/")) {
-    webhookUrl += "/";
-  }
-  webhookUrl += "api/payment/webhook";
+	// Check if LEMONSQUEEZY_WEBHOOK_URL ends with a slash. If not, add it.
+	let webhookUrl = env.LEMONSQUEEZY_WEBHOOK_URL;
+	if (!webhookUrl.endsWith('/')) {
+		webhookUrl += '/';
+	}
+	webhookUrl += 'api/payment/webhook';
 
-  const webhook = allWebhooks.data?.data.find(
-    (wh) => wh.attributes.url === webhookUrl && wh.attributes.test_mode,
-  );
-  return webhook;
+	const webhook = allWebhooks.data?.data.find((wh) => wh.attributes.url === webhookUrl && wh.attributes.test_mode);
+	return webhook;
 }
 
 /**
@@ -298,63 +277,59 @@ export async function hasWebhook() {
  * Subscription events. It will only set up the webhook if it does not exist.
  */
 export async function setupWebhook() {
-  try {
-    configureLemonSqueezy();
+	try {
+		configureLemonSqueezy();
 
-    if (!env.LEMONSQUEEZY_WEBHOOK_URL) {
-      throw new Error(
-        "Missing required LEMONSQUEEZY_WEBHOOK_URL env variable. Please, set it in your .env file.",
-      );
-    }
+		if (!env.LEMONSQUEEZY_WEBHOOK_URL) {
+			throw new Error('Missing required LEMONSQUEEZY_WEBHOOK_URL env variable. Please, set it in your .env file.');
+		}
 
-    // Check if LEMONSQUEEZY_WEBHOOK_URL ends with a slash. If not, add it.
-    let webhookUrl = env.LEMONSQUEEZY_WEBHOOK_URL;
-    if (!webhookUrl.endsWith("/")) {
-      webhookUrl += "/";
-    }
-    webhookUrl += "api/payment/webhook";
+		// Check if LEMONSQUEEZY_WEBHOOK_URL ends with a slash. If not, add it.
+		let webhookUrl = env.LEMONSQUEEZY_WEBHOOK_URL;
+		if (!webhookUrl.endsWith('/')) {
+			webhookUrl += '/';
+		}
+		webhookUrl += 'api/payment/webhook';
 
-    // eslint-disable-next-line no-console -- allow
-    console.log("Setting up a webhook on Lemon Squeezy (Test Mode)...");
+		// eslint-disable-next-line no-console -- allow
+		console.log('Setting up a webhook on Lemon Squeezy (Test Mode)...');
 
-    // Do not set a webhook on Lemon Squeezy if it already exists.
-    let webhook = await hasWebhook();
+		// Do not set a webhook on Lemon Squeezy if it already exists.
+		let webhook = await hasWebhook();
 
-    // If the webhook does not exist, create it.
-    if (!webhook) {
-      const newWebhook = await createWebhook(env.LEMONSQUEEZY_STORE_ID!, {
-        secret: env.LEMONSQUEEZY_WEBHOOK_SECRET!,
-        url: webhookUrl,
-        testMode: true, // will create a webhook in Test mode only!
-        events: [
-          "order_created",
-          "order_refunded",
-          "subscription_created",
-          "subscription_updated",
-          "subscription_cancelled",
-          "subscription_resumed",
-          "subscription_expired",
-          "subscription_paused",
-          "subscription_unpaused",
-          "subscription_payment_success",
-          "subscription_payment_failed",
-          "subscription_payment_recovered",
-          "subscription_payment_refunded",
-          "license_key_created",
-          "license_key_updated",
-        ],
-      });
+		// If the webhook does not exist, create it.
+		if (!webhook) {
+			const newWebhook = await createWebhook(env.LEMONSQUEEZY_STORE_ID!, {
+				secret: env.LEMONSQUEEZY_WEBHOOK_SECRET!,
+				url: webhookUrl,
+				testMode: true, // will create a webhook in Test mode only!
+				events: [
+					'order_created',
+					'order_refunded',
+					'subscription_created',
+					'subscription_updated',
+					'subscription_cancelled',
+					'subscription_resumed',
+					'subscription_expired',
+					'subscription_paused',
+					'subscription_unpaused',
+					'subscription_payment_success',
+					'subscription_payment_failed',
+					'subscription_payment_recovered',
+					'subscription_payment_refunded',
+					'license_key_created',
+					'license_key_updated',
+				],
+			});
 
-      webhook = newWebhook.data?.data;
-    }
+			webhook = newWebhook.data?.data;
+		}
 
-    // eslint-disable-next-line no-console -- allow
-    console.log(`Webhook ${webhook?.id} created on Lemon Squeezy.`);
-  } catch (error) {
-    console.error(
-      `Setup Webhook failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+		// eslint-disable-next-line no-console -- allow
+		console.log(`Webhook ${webhook?.id} created on Lemon Squeezy.`);
+	} catch (error) {
+		console.error(`Setup Webhook failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
 }
 
 // /**
@@ -783,7 +758,7 @@ export async function setupWebhook() {
 // }
 
 try {
-  setupWebhook();
+	setupWebhook();
 } catch (error) {
-  // throw new Error(`Setup Webhook failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	// throw new Error(`Setup Webhook failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
 }

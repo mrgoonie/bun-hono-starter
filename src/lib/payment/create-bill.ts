@@ -1,97 +1,89 @@
-import type { Product, User } from "@prisma/client";
-import { prisma } from "../db";
-import { sumArray } from "diginext-utils/dist/array";
-import { createDate } from "oslo";
-import { TimeSpan } from "lucia";
+import type { Product, User } from '@prisma/client';
+import { prisma } from '../db';
+import { sumArray } from 'diginext-utils/dist/array';
+import { createDate } from 'oslo';
+import { TimeSpan } from 'lucia';
 
 interface ICreateBill {
-  user: User;
-  cartIds: Array<string>;
-  workspaceId?: string;
+	user: User;
+	cartIds: Array<string>;
+	workspaceId?: string;
 }
 
 function checkCurrencyConsistency(products: Array<Partial<Product>>) {
-  if (products.length === 0) {
-    throw new Error("No products provided.");
-  }
+	if (products.length === 0) {
+		throw new Error('No products provided.');
+	}
 
-  // Assuming all products should have the same currency as the first product in the array
-  const expectedCurrency = products[0]?.currency;
-  if (!expectedCurrency) throw new Error("Currency needed.");
+	// Assuming all products should have the same currency as the first product in the array
+	const expectedCurrency = products[0]?.currency;
+	if (!expectedCurrency) throw new Error('Currency needed.');
 
-  const hasConsistentCurrency = products.every(
-    (product) => product.currency === expectedCurrency,
-  );
+	const hasConsistentCurrency = products.every((product) => product.currency === expectedCurrency);
 
-  if (!hasConsistentCurrency) {
-    throw new Error("Currency mismatch detected among products.");
-  }
+	if (!hasConsistentCurrency) {
+		throw new Error('Currency mismatch detected among products.');
+	}
 
-  return true;
+	return true;
 }
 
-export default async function createBill({
-  user,
-  cartIds,
-  workspaceId,
-}: ICreateBill) {
-  //
-  try {
-    if (!user) throw new Error("Need login");
+export default async function createBill({ user, cartIds, workspaceId }: ICreateBill) {
+	//
+	try {
+		if (!user) throw new Error('Need login');
 
-    const carts = await prisma.cartItem.findMany({
-      where: {
-        id: { in: cartIds },
-      },
-      include: {
-        product: true,
-      },
-    });
+		const carts = await prisma.cartItem.findMany({
+			where: {
+				id: { in: cartIds },
+			},
+			include: {
+				product: true,
+			},
+		});
 
-    const products = carts.map((x) => x.product);
+		const products = carts.map((x) => x.product);
 
-    checkCurrencyConsistency(products);
+		checkCurrencyConsistency(products);
 
-    const totalPrice = sumArray(products as any, "price");
-    const currency = products[0]?.currency;
+		const totalPrice = sumArray(products as any, 'price');
+		const currency = products[0]?.currency;
 
-    const expirationTime = createDate(new TimeSpan(2, "h"));
+		const expirationTime = createDate(new TimeSpan(2, 'h'));
 
-    const bill = await prisma.bill.create({
-      data: {
-        total: totalPrice,
-        currency,
-        userId: user!.id,
-        expiresAt: expirationTime,
-        paidProducts: {
-          create: carts.map((x) => ({
-            owner: {
-              connect: {
-                id: user?.id,
-              },
-            },
-            ...(workspaceId ? { workspaceId } : {}),
-            product: {
-              connect: {
-                id: x.productId,
-              },
-            },
-          })),
-        },
-      },
-    });
-    await prisma.cartItem.deleteMany({
-      where: {
-        id: { in: cartIds },
-      },
-    });
+		const bill = await prisma.bill.create({
+			data: {
+				total: totalPrice,
+				currency,
+				userId: user!.id,
+				expiresAt: expirationTime,
+				paidProducts: {
+					create: carts.map((x) => ({
+						owner: {
+							connect: {
+								id: user?.id,
+							},
+						},
+						...(workspaceId ? { workspaceId } : {}),
+						product: {
+							connect: {
+								id: x.productId,
+							},
+						},
+					})),
+				},
+			},
+		});
+		await prisma.cartItem.deleteMany({
+			where: {
+				id: { in: cartIds },
+			},
+		});
 
-    if (bill.id) return bill;
+		if (bill.id) return bill;
 
-    throw new Error("Err");
-  } catch (error) {
-    throw new Error(
-      `Create Bill failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+		throw new Error('Err');
+	} catch (error) {
+		throw new Error(`Create Bill failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
 }

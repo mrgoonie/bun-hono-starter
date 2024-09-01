@@ -1,6 +1,6 @@
-import { variantRouter } from "@/api/lmsqueezy/variant";
-import { createTRPCRouter } from "@/api/trpc";
+import { variantRouter } from '@/api/lmsqueezy/variant';
+import { createTRPCRouter } from '@/api/trpc';
 
 export const lmsqueezyRouter = createTRPCRouter({
-  variant: variantRouter,
+	variant: variantRouter,
 });
