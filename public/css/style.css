@@ -646,6 +646,10 @@ a {
   animation: scale-fade-in 0.5s ease-out forwards;
 }
 
+.resize {
+  resize: both;
+}
+
 .flex-col {
   flex-direction: column;
 }

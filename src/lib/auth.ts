@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { prisma } from './db.js';
 import { Lucia, verifyRequestOrigin } from 'lucia';
 import { GitHub, Google } from 'arctic';
-import type { MiddlewareHandler } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 import { env } from '@/env.js';
 
 dotenv.config();
@@ -12,7 +12,11 @@ const adapter = new PrismaAdapter(prisma.session, prisma.user);
 
 export const github = new GitHub(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET);
 
-export const google = new Google(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, `${env.baseUrl()}/login/google/callback`);
+export const google = new Google(
+	env.GOOGLE_CLIENT_ID,
+	env.GOOGLE_CLIENT_SECRET,
+	`${env.baseUrl()}/login/google/callback`
+);
 
 export const lucia = new Lucia(adapter, {
 	sessionCookie: {
@@ -43,7 +47,8 @@ interface DatabaseUserAttributes {
 }
 
 export const verifyRequest: MiddlewareHandler = async (c, next) => {
-	const { req } = c;
+	// console.log(`verifyRequest > c :>>`, c);
+	const { req } = c || { req: { method: 'GET' } };
 	if (req.method === 'GET') {
 		return next();
 	}
@@ -55,8 +60,12 @@ export const verifyRequest: MiddlewareHandler = async (c, next) => {
 	return next();
 };
 
-export const validateSession: MiddlewareHandler = async (c, next) => {
-	const sessionId = lucia.readSessionCookie(c.req.header('Cookie') ?? '');
+export const validateSession: MiddlewareHandler = async (c: Context, next) => {
+	// if (!c) return next();
+
+	const authorizationHeader = c.req.header('Authorization') || '';
+	const sessionId = lucia.readSessionCookie(c.req.header('Cookie') ?? '') || lucia.readBearerToken(authorizationHeader);
+	console.log(`validateSession > sessionId :>>`, sessionId);
 	if (!sessionId) {
 		c.set('user', null);
 		c.set('session', null);
@@ -64,6 +73,8 @@ export const validateSession: MiddlewareHandler = async (c, next) => {
 	}
 
 	const { session, user } = await lucia.validateSession(sessionId);
+	console.log(`validateSession > session :>>`, session);
+	console.log(`validateSession > user :>>`, user);
 	if (session && session.fresh) {
 		c.res.headers.set('Set-Cookie', lucia.createSessionCookie(session.id).serialize());
 	}

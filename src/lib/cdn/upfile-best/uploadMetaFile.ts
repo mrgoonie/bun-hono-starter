@@ -1,6 +1,5 @@
-import AppConfig from '@/config/AppConfig';
 import getBlobByUrl from '@/lib/cdn/helpers/getBlobByUrl';
-import upfileBestFetchServer from '@/lib/fetch/upfile-best/upfileBestFetchServer';
+import upfileBestFetchServer from '@/lib/cdn/upfile-best/upfileBestFetchServer';
 
 export default async function uploadMetafile(url: string, directory: string = '') {
 	//

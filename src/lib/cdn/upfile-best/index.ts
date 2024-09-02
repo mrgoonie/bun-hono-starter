@@ -1,3 +1,5 @@
+import { env } from '@/env';
+
 export const configureUpfileBest = () => {
 	//
 	const requiredVars = ['UPFILE_BEST_API_KEY'];
@@ -9,4 +11,8 @@ export const configureUpfileBest = () => {
 			`Missing required UPFILE_BEST env variables: ${missingVars.join(', ')}. Please, set them in your .env file.`
 		);
 	}
+};
+
+export const getApiUpfileBestUrl = (url = '') => {
+	return `${env.UPFILE_BEST_URL}${url}`;
 };

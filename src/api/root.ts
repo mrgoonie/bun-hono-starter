@@ -6,6 +6,7 @@ import { productRouter } from '@/api/product';
 import { createTRPCRouter } from '@/api/trpc';
 import { profileRouter } from '@/api/user';
 import { workspaceRouter } from '@/api/workspace';
+import { healthCheckRouter } from './healthz';
 
 /**
  * This is the primary router for your server.
@@ -13,6 +14,7 @@ import { workspaceRouter } from '@/api/workspace';
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
+	healthz: healthCheckRouter,
 	admin: adminRouter,
 	profile: profileRouter,
 	metaFile: metaFileRouter,

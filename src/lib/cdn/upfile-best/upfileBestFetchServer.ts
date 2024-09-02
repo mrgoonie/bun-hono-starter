@@ -1,5 +1,5 @@
-import AppConfig from '@/config/AppConfig';
-import { configureUpfileBest } from '@/lib/cdn/upfile-best';
+import { env } from '@/env';
+import { configureUpfileBest, getApiUpfileBestUrl } from '@/lib/cdn/upfile-best';
 import { type FetchResponse, type IFetch } from '@/lib/fetch/fetchClient';
 import { fetchServer } from '@/lib/fetch/fetchServer';
 
@@ -10,10 +10,10 @@ export default async function upfileBestFetchServer<T>({ path, headers, ...rest 
 		configureUpfileBest();
 
 		return await fetchServer({
-			path: AppConfig.getApiUpfileBestUrl(path),
+			path: getApiUpfileBestUrl(path),
 			headers: {
 				...headers,
-				'upfilebest-api-key': process.env.UPFILE_BEST_API_KEY!,
+				'upfilebest-api-key': env.UPFILE_BEST_API_KEY!,
 			},
 			...rest,
 		});

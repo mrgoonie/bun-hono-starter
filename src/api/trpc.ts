@@ -11,11 +11,12 @@ import superjson from 'superjson';
 import { ZodError } from 'zod';
 
 import { AppRoleDefault } from '@/config/constants';
-import { verifyRequest } from '@/lib/auth';
+import { validateSession, verifyRequest } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { Context } from 'hono';
 
-import { OpenApiMeta } from 'trpc-openapi';
+import type { OpenApiMeta } from 'trpc-openapi';
+import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 
 /**
  * 1. CONTEXT
@@ -29,9 +30,12 @@ import { OpenApiMeta } from 'trpc-openapi';
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers; c: Context }) => {
-	await verifyRequest(opts.c, async () => {});
-	const user = opts.c.get('user');
+export const createTRPCContext = async (opts: FetchCreateContextFnOptions, c: Context) => {
+	// await verifyRequest(c, async () => {});
+	// await validateSession(c, async () => {});
+	console.log('createTRPCContext called with:', { opts, c });
+
+	const user = c ? c.get('user') : null;
 	const isAdmin = user?.roles?.includes(AppRoleDefault.ADMIN) ?? false;
 
 	return {
@@ -100,8 +104,10 @@ export const publicProcedure = t.procedure;
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-	if (!ctx.user?.id) {
-		throw new TRPCError({ code: 'UNAUTHORIZED' });
+	console.log(`protectedProcedure :>>`, { ctx });
+
+	if (!ctx || !ctx.user?.id) {
+		throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Login required.' });
 	}
 
 	return next();
