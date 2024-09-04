@@ -80,7 +80,9 @@ export async function processMembership(params: { productId: string; bill: Bill;
 		if (!productTag) return null;
 
 		const durationInDays =
-			productTag.product.productTags.findIndex((x) => x.tag.name == TagDefault.ANNUAL) >= 0 ? DEFAULT_ANNUAL_DURATION : DEFAULT_MONTHLY_DURATION;
+			productTag.product.productTags.findIndex((x) => x.tag.name == TagDefault.ANNUAL) >= 0
+				? DEFAULT_ANNUAL_DURATION
+				: DEFAULT_MONTHLY_DURATION;
 
 		const proRole = await prisma.role.findFirstOrThrow({
 			where: { name: AppRoleDefault.PRO },

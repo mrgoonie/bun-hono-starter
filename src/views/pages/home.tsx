@@ -4,7 +4,9 @@ import type { User } from '@prisma/client';
 export const Home: FC<{ user?: User }> = ({ user }) => {
 	return (
 		<main className="flex-grow relative h-full flex items-center justify-center">
-			<div class={`text-center bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 animate-[scale-fade-in_0.5s_ease-out_forwards]`}>
+			<div
+				class={`text-center bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 animate-[scale-fade-in_0.5s_ease-out_forwards]`}
+			>
 				<div class="h-auto text-center">
 					<h1 class="font-bold">Bun + Hono + Prisma + Lucia Auth</h1>
 					<div class="flex justify-center my-4">
@@ -19,7 +21,9 @@ export const Home: FC<{ user?: User }> = ({ user }) => {
 					</h2>
 					<p>Your user ID is "{user?.id}".</p>
 					<form method="post" class="mt-4">
-						<button class="py-2 px-6 bg-blue-400 hover:bg-blue-500 transition-all rounded-md text-white">Sign out</button>
+						<button class="py-2 px-6 bg-blue-400 hover:bg-blue-500 transition-all rounded-md text-white">
+							Sign out
+						</button>
 					</form>
 				</div>
 			</div>

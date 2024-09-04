@@ -14,12 +14,10 @@ import { logoutRouter } from '@/routes/logout';
 
 import type { User, Session } from 'lucia';
 import { env } from '@/env';
-import { appRouter } from '@/api/root';
-import { createTRPCContext } from './api/trpc';
+import { appRouter } from '@/routes/api/root';
+import { createTRPCContext } from '@/routes/api/trpc';
 import { swaggerUI } from '@hono/swagger-ui';
-import { createOpenApiHonoMiddleware, openApiDocument } from './api/openapi';
-import { TRPCError } from '@trpc/server';
-import { api } from './api/openapi-zod';
+import { createOpenApiHonoMiddleware, openApiDocument } from '@/routes/api/openapi';
 
 // initialize
 const app = new Hono();
@@ -48,33 +46,23 @@ app.use(
 	})
 );
 
-// zod openapi swagger
-app.route('/', api);
+// Swagger UI
 app.get('/api-docs', swaggerUI({ url: '/openapi.json' }));
 
+// zod openapi swagger
+// app.route('/', api);
+
 // Use the middleware to serve Swagger UI at /ui
-// app.get('/openapi.json', (c) => c.json(openApiDocument));
-// app.get('/api-docs', swaggerUI({ url: '/openapi.json' }));
-// app.use(
-// 	'/api/*',
-// 	createOpenApiHonoMiddleware({
-// 		router: appRouter,
-// 		createContext: createTRPCContext,
-// 		// responseMeta: () => {
-// 		// 	// You can customize this function to set response headers if needed
-// 		// 	return {
-// 		// 		headers: {
-// 		// 			'Cache-Control': 'no-cache',
-// 		// 			'Content-Type': 'application/json',
-// 		// 		},
-// 		// 	};
-// 		// },
-// 		onError: ({ error }) => {
-// 			console.error('API error:', error);
-// 		},
-// 		maxBodySize: 10 * 1024 * 1024, // 10MB, adjust as needed
-// 	} as any)
-// );
+app.get('/openapi.json', (c) => c.json(openApiDocument));
+
+// trpc-openapi
+app.use(
+	'/api/*',
+	createOpenApiHonoMiddleware({
+		router: appRouter,
+		createContext: createTRPCContext,
+	} as any)
+);
 
 // routes
 app.route('/', mainRouter);

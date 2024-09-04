@@ -53,7 +53,9 @@ export const cartRouter = createTRPCRouter({
 					pagination: getPagination(page, totalCount, pageSize),
 				};
 			} catch (error) {
-				throw new Error(`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 
@@ -122,7 +124,9 @@ export const cartRouter = createTRPCRouter({
 
 				return updatedProduct;
 			} catch (error) {
-				throw new Error(`Failed to update workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Failed to update workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 
@@ -144,7 +148,9 @@ export const cartRouter = createTRPCRouter({
 				message: 'Workspace product deleted successfully',
 			};
 		} catch (error) {
-			throw new Error(`Failed to delete workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to delete workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}),
 });

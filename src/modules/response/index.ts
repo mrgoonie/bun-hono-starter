@@ -22,7 +22,7 @@ export const responseRedirect = (location = '/') => {
 	});
 };
 
-export const fail404 = (message = 'Something went wrong') => {
+export const fail404 = () => {
 	return responseRedirect('/404');
 };
 

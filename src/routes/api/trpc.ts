@@ -11,7 +11,6 @@ import superjson from 'superjson';
 import { ZodError } from 'zod';
 
 import { AppRoleDefault } from '@/config/constants';
-import { validateSession, verifyRequest } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { Context } from 'hono';
 
@@ -33,7 +32,7 @@ import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 export const createTRPCContext = async (opts: FetchCreateContextFnOptions, c: Context) => {
 	// await verifyRequest(c, async () => {});
 	// await validateSession(c, async () => {});
-	console.log('createTRPCContext called with:', { opts, c });
+	// console.log('createTRPCContext called with:', { opts, c });
 
 	const user = c ? c.get('user') : null;
 	const isAdmin = user?.roles?.includes(AppRoleDefault.ADMIN) ?? false;
@@ -104,7 +103,7 @@ export const publicProcedure = t.procedure;
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-	console.log(`protectedProcedure :>>`, { ctx });
+	// console.log(`protectedProcedure :>>`, { ctx });
 
 	if (!ctx || !ctx.user?.id) {
 		throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Login required.' });

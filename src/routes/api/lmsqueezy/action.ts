@@ -149,7 +149,14 @@ interface IgetCheckoutURL {
 /**
  * This action will create a checkout on Lemon Squeezy.
  */
-export async function getCheckoutURL({ variantId, redirectUrl, embed = false, customData = {}, c, ...options }: IgetCheckoutURL) {
+export async function getCheckoutURL({
+	variantId,
+	redirectUrl,
+	embed = false,
+	customData = {},
+	c,
+	...options
+}: IgetCheckoutURL) {
 	configureLemonSqueezy();
 
 	await verifyRequest(c, async () => {});
@@ -254,7 +261,8 @@ export async function hasWebhook() {
 		throw new Error('Missing required LEMONSQUEEZY_WEBHOOK_URL env variable. Please, set it in your .env file.');
 	}
 
-	if (env.LEMONSQUEEZY_WEBHOOK_URL.indexOf('localhost') >= 0) throw new Error('Lemonsqueezy Webhook Url Ignoring localhost ');
+	if (env.LEMONSQUEEZY_WEBHOOK_URL.indexOf('localhost') >= 0)
+		throw new Error('Lemonsqueezy Webhook Url Ignoring localhost ');
 
 	// Check if a webhook exists on Lemon Squeezy.
 	const allWebhooks = await listWebhooks({

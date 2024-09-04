@@ -2,8 +2,11 @@ import { generateOpenApiDocument, type CreateOpenApiHttpHandlerOptions, type Ope
 import { appRouter } from './root';
 import { env } from '@/env';
 import pkg from 'package.json';
-import { createOpenApiNodeHttpHandler } from 'trpc-openapi/dist/adapters/node-http/core';
-import type { Context, Next } from 'hono';
+import {
+	createOpenApiNodeHttpHandler,
+	type CreateOpenApiNodeHttpHandlerOptions,
+} from 'trpc-openapi/dist/adapters/node-http/core';
+import type { Context, HonoRequest } from 'hono';
 import type { StatusCode } from 'hono/utils/http-status';
 
 // Generate OpenAPI schema document
@@ -19,8 +22,14 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
 	// },
 });
 
+export type CreateOpenApiHonoMiddlewareOptions<TRouter extends OpenApiRouter> = CreateOpenApiNodeHttpHandlerOptions<
+	TRouter,
+	Request,
+	Response
+>;
+
 export const createOpenApiHonoMiddleware = <TRouter extends OpenApiRouter>(
-	opts: CreateOpenApiHttpHandlerOptions<TRouter>
+	opts: CreateOpenApiHonoMiddlewareOptions<TRouter>
 ) => {
 	// let prefix = opts.basePath ?? '';
 	let prefix = '/api';
@@ -28,10 +37,20 @@ export const createOpenApiHonoMiddleware = <TRouter extends OpenApiRouter>(
 	// if prefix ends with a slash, remove it
 	if (prefix.endsWith('/')) prefix = prefix.slice(0, -1);
 
-	const openApiHttpHandler = createOpenApiNodeHttpHandler(opts);
-
 	return async (c: Context) => {
+		console.log(`c.req.url :>>`, c.req.url);
 		console.log(`c.get('user') :>>`, c.get('user'));
+
+		opts.createContext = async (_opts: CreateOpenApiHttpHandlerOptions<TRouter>) => ({
+			..._opts,
+			...(_opts.createContext ? await _opts.createContext(opts, c) : {}),
+			// propagate env by default
+			env: c.env,
+			// inject authenticated user (if any)
+			user: c.get('user'),
+		});
+
+		const openApiHttpHandler = createOpenApiNodeHttpHandler(opts);
 
 		const res = {
 			statusCode: 200 as StatusCode,
@@ -62,7 +81,7 @@ export const createOpenApiHonoMiddleware = <TRouter extends OpenApiRouter>(
 		url.pathname = url.pathname.replace(prefix || '', '');
 		// console.log(`url :>>`, url);
 
-		const modifiedReq = new Request(url, c.req);
+		const modifiedReq = new Request(url, c.req.raw);
 
 		await openApiHttpHandler(modifiedReq, res);
 

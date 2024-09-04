@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getPagination } from '@/api/helper';
 import { productTagRouter } from '@/api/product/productTagRouter';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '@/api/trpc';
-import { imagesType, productTagType } from '@/api/type';
+import { imagesType, productTagType } from '@/modules/type';
 import makeSlugByName from '@/lib/utils/string/makeSlugByName';
 import { generateId } from 'lucia';
 
@@ -64,7 +64,9 @@ export const productRouter = createTRPCRouter({
 					pagination: getPagination(page, totalCount, pageSize),
 				};
 			} catch (error) {
-				throw new Error(`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 
@@ -105,7 +107,9 @@ export const productRouter = createTRPCRouter({
 
 			return product;
 		} catch (error) {
-			throw new Error(`Failed to create workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to create workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}),
 
@@ -144,7 +148,9 @@ export const productRouter = createTRPCRouter({
 
 				return updatedProduct;
 			} catch (error) {
-				throw new Error(`Failed to update workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Failed to update workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 
@@ -158,7 +164,9 @@ export const productRouter = createTRPCRouter({
 				},
 			});
 		} catch (error) {
-			throw new Error(`Failed to delete workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw new Error(
+				`Failed to delete workspace product: ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
 		}
 	}),
 });

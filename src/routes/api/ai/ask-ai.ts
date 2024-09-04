@@ -2,9 +2,9 @@
 
 import { z } from 'zod';
 
-import { respondFailure, respondSuccess } from '@/api/response/respond-helper';
+import { respondFailure, respondSuccess } from '@/modules/response/respond-helper';
 import { createTRPCRouter, protectedProcedure } from '@/api/trpc';
-import { ApiResponseSchema } from '@/api/response/schemas';
+import { ApiResponseSchema } from '@/modules/response/api-response';
 import { askAi, AskAiParamsSchema, getParams } from '@/lib/ai';
 
 export const askAiRouter = createTRPCRouter({

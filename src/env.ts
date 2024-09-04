@@ -30,6 +30,7 @@ export const env = {
 	//
 	SITE_TITLE: process.env['SITE_TITLE'] || 'My Web App',
 	SITE_DESC: process.env['SITE_DESC'] || 'Description goes here.',
+	//
 	baseUrl: () => {
 		const baseUrl = process.env['BASE_URL'];
 		if (baseUrl) return baseUrl;

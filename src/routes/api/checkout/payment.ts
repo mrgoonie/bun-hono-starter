@@ -2,12 +2,10 @@ import { z } from 'zod';
 
 import { getPagination } from '@/api/helper';
 import { createTRPCRouter, protectedProcedure } from '@/api/trpc';
-import createBill from '@/lib/payment/create-bill';
-import { TRPCError } from '@trpc/server';
 
 // Assuming Product and relevant models are defined similar to your Workspace model
 
-export const billRouter = createTRPCRouter({
+export const payment = createTRPCRouter({
 	// List Products
 	list: protectedProcedure
 		.input(
@@ -27,17 +25,16 @@ export const billRouter = createTRPCRouter({
 			};
 			try {
 				const [products, totalCount] = await Promise.all([
-					ctx.prisma.bill.findMany({
+					ctx.prisma.payment.findMany({
 						where,
 						skip,
 						take: pageSize,
 						orderBy: { createdAt: 'desc' },
 						include: {
-							paidProducts: true,
-							payments: true,
+							bill: true,
 						},
 					}),
-					ctx.prisma.bill.count({ where }),
+					ctx.prisma.payment.count({ where }),
 				]);
 
 				return {
@@ -45,7 +42,9 @@ export const billRouter = createTRPCRouter({
 					pagination: getPagination(page, totalCount, pageSize),
 				};
 			} catch (error) {
-				throw new Error(`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 
@@ -60,21 +59,17 @@ export const billRouter = createTRPCRouter({
 				const { id } = input;
 				if (!id) throw new Error('Need Id');
 
-				const item = await ctx.prisma.bill.findUniqueOrThrow({
+				const item = await ctx.prisma.payment.findUniqueOrThrow({
 					where: {
 						id,
 						userId: ctx.user?.id!,
 					},
 					include: {
-						paidProducts: {
+						bill: {
 							include: {
-								product: {
+								paidProducts: {
 									include: {
-										lemonsqueezyVariants: {
-											include: {
-												lemonsqueezyProduct: true,
-											},
-										},
+										product: true,
 									},
 								},
 							},
@@ -87,33 +82,28 @@ export const billRouter = createTRPCRouter({
 			}
 		}),
 
-	create: protectedProcedure
-		.input(
-			z.object({
-				cartIds: z.array(z.string()),
-				workspaceId: z.string().optional(),
-			})
-		)
-		.mutation(async ({ ctx, input }) => {
-			try {
-				const { cartIds, workspaceId } = input;
-				if (!cartIds.length) throw new Error('Need Id');
+	// create: protectedProcedure
+	// 	.input(
+	// 		z.object({
+	// 			productId: z.string(),
+	// 		})
+	// 	)
+	// 	.mutation(async ({ ctx, input }) => {
+	// 		try {
+	// 			const { productId } = input;
+	// 			if (!productId) throw new Error("Need Product");
 
-				const user = await ctx.prisma.user.findUnique({
-					where: { id: ctx.user?.id },
-				});
-				if (!user)
-					throw new TRPCError({
-						code: 'UNAUTHORIZED',
-						message: `User not found.`,
-					});
-				const bill = await createBill({ user, cartIds, workspaceId });
-
-				return bill;
-			} catch (error) {
-				throw new Error(`Failed to Add To Cart: ${error instanceof Error ? error.message : 'Unknown error'}`);
-			}
-		}),
+	// 			const item = await ctx.prisma.cartItem.create({
+	// 				data: {
+	// 					productId,
+	// 					userId: ctx.user?.id!,
+	// 				},
+	// 			});
+	// 			return item;
+	// 		} catch (error) {
+	// 			throw new Error(`Failed to Add To Cart: ${error instanceof Error ? error.message : "Unknown error"}`);
+	// 		}
+	// 	}),
 
 	// // Update a Product
 	// update: protectedProcedure

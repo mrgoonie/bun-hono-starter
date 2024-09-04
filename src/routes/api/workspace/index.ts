@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { getPagination } from '@/api/helper';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '@/api/trpc';
-import generateWorkspaceByUser from '@/api/workspace/generateWorkspaceByUser';
+import generateWorkspaceByUser from '@/modules/workspace/generateWorkspaceByUser';
 import { generateId } from 'lucia';
 
 const workspaceSchema = z.object({
@@ -113,7 +113,9 @@ export const workspaceRouter = createTRPCRouter({
 
 				return workspaceDetail;
 			} catch (error) {
-				throw new Error(`Workspace details retrieval failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Workspace details retrieval failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 
@@ -154,7 +156,9 @@ export const workspaceRouter = createTRPCRouter({
 					pagination: getPagination(page, totalCount, pageSize),
 				};
 			} catch (error) {
-				throw new Error(`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				throw new Error(
+					`Failed to list workspace products: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
 			}
 		}),
 

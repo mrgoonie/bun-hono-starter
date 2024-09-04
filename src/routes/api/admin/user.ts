@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { getPagination } from '@/api/helper';
 import { adminProcedure, createTRPCRouter } from '@/api/trpc';
-import { profileType, userRolesType } from '@/api/type';
+import { profileType, userRolesType } from '@/modules/type';
 
 export const usersRouter = createTRPCRouter({
 	list: adminProcedure

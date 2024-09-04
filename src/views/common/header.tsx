@@ -24,7 +24,13 @@ export const Header: FC = () => {
 		<div class="p-2 dark:bg-gray-800 flex justify-between items-center">
 			<h1 class="text-xl font-bold text-gray-800 dark:text-white">My App</h1>
 			<button id="darkModeToggle" class="p-1.5 rounded-full bg-gray-200 dark:bg-gray-700">
-				<svg class="w-5 h-5 text-gray-800 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+				<svg
+					class="w-5 h-5 text-gray-800 dark:text-white"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+					xmlns="http://www.w3.org/2000/svg"
+				>
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"

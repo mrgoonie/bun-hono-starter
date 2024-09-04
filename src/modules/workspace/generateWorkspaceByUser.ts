@@ -98,6 +98,8 @@ export default async function generateWorkspaceByUser(user: User, input?: Genera
 
 		return workspace;
 	} catch (error) {
-		throw new Error(`Auto Generate Workspace By User failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw new Error(
+			`Auto Generate Workspace By User failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
 	}
 }
