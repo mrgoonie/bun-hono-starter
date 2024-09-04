@@ -9,10 +9,10 @@
 - [x] Lucia Auth
 - [x] TailwindCSS
 - [x] tRPC
+- [x] OpenAPI & Swagger
 - [x] Commit Lint
 - [x] Prettier
 - [x] Semantic Release
-- [ ] OpenAPI Swagger
 
 ## Install
 
